@@ -1,0 +1,38 @@
+public_baseurl: "https://matrix.demo.local/"
+
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: synapse123
+    database: synapse
+    host: synapse_postgres
+    cp_min: 5
+    cp_max: 10
+
+enable_registration: false
+
+oidc_providers:
+  - idp_id: keycloak
+    idp_name: "Keycloak SSO"
+    issuer: "https://keycloak.demo.local/realms/demo"
+    client_id: "synapse"
+    client_secret: "clientsecret-changeme"
+    scopes: ["openid", "profile", "email"]
+    skip_verification: true
+    allow_existing_users: true
+    user_mapping_provider:
+      config:
+        localpart_template: "{{ user.preferred_username }}"
+        display_name_template: "{{ user.name }}"
+
+#oidc_session_lifetime: 3600000
+
+turn_uris:
+  - "turn:172.20.102.165:3478?transport=udp"
+  - "turn:172.20.102.165:3478?transport=tcp"
+turn_shared_secret: "demoturnsecret123"
+turn_user_lifetime: 86400000
+turn_allow_guests: false
+
+# vim:ft=yaml

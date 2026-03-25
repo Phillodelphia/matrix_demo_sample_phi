@@ -23,6 +23,8 @@ services:
     networks:
       matrix_net:
         ipv4_address: 10.89.0.100
+    dns:
+      - 10.89.0.2
     depends_on:
       - synapse
       - element
@@ -43,6 +45,8 @@ services:
       - ./synapse/postgres:/var/lib/postgresql/data
     networks:
       - matrix_net
+    dns:
+      - 10.89.0.2
 
 # ─────────────────────────────────────────
 # SYNAPSE
@@ -64,6 +68,8 @@ services:
       - "keycloak.demo.local:10.89.0.100"
     networks:
       - matrix_net
+    dns:
+      - 10.89.0.2
 
 # ─────────────────────────────────────────
 # ELEMENT WEB
@@ -77,10 +83,8 @@ services:
       - ELEMENT_WEB_PORT=8080
     networks:
       - matrix_net
-    extra_hosts:
-      - "keycloak.demo.local:10.89.0.100"
-      - "matrix.demo.local:10.89.0.100"
-
+    dns:
+      - 10.89.0.2
 # ─────────────────────────────────────────
 # COTURN
 # ─────────────────────────────────────────
@@ -95,6 +99,8 @@ services:
       - "5349:5349/tcp"
     networks:
       - matrix_net
+    dns:
+      - 10.89.0.2
 
 # ─────────────────────────────────────────
 # KEYCLOAK DATABASE
@@ -110,6 +116,8 @@ services:
       - ./keycloak/postgres:/var/lib/postgresql/data
     networks:
       - matrix_net
+    dns:
+      - 10.89.0.2
 
 # ─────────────────────────────────────────
 # KEYCLOAK
@@ -136,3 +144,20 @@ services:
       - keycloak_postgres
     networks:
       - matrix_net
+    dns:
+      - 10.89.0.2
+
+# ─────────────────────────────────────────
+# DNSMASQ
+# ─────────────────────────────────────────
+
+  dnsmasq:
+    image: 4km3/dnsmasq:latest
+    restart: unless-stopped
+    volumes:
+      - ./dnsmasq/dnsmasq.conf:/etc/dnsmasq.conf:ro
+    cap_add:
+      - NET_ADMIN
+    networks:
+      matrix_net:
+        ipv4_address: 10.89.0.2
