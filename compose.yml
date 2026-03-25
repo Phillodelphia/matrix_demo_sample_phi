@@ -1,0 +1,138 @@
+version: "3.8"
+
+networks:
+  matrix_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.89.0.0/24
+
+services:
+
+# ─────────────────────────────────────────
+# NGINX
+# ─────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      matrix_net:
+        ipv4_address: 10.89.0.100
+    depends_on:
+      - synapse
+      - element
+      - keycloak
+
+# ─────────────────────────────────────────
+# SYNAPSE DATABASE
+# ─────────────────────────────────────────
+  synapse_postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: synapse123
+      POSTGRES_DB: synapse
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - ./synapse/postgres:/var/lib/postgresql/data
+    networks:
+      - matrix_net
+
+# ─────────────────────────────────────────
+# SYNAPSE
+# ─────────────────────────────────────────
+  synapse:
+#    image: matrixdotorg/synapse:latest
+    build:
+      context: ./synapse-build
+    restart: unless-stopped
+    environment:
+      SYNAPSE_CONFIG_PATH: /data/homeserver.yaml
+    volumes:
+      - ./synapse/data:/data
+      - ./synapse/cert.pem:/usr/local/share/ca-certificates/local.crt:ro
+    depends_on:
+      - synapse_postgres
+    extra_hosts:
+      - "matrix.demo.local:10.89.0.100"
+      - "keycloak.demo.local:10.89.0.100"
+    networks:
+      - matrix_net
+
+# ─────────────────────────────────────────
+# ELEMENT WEB
+# ─────────────────────────────────────────
+  element:
+    image: vectorim/element-web:latest
+    restart: unless-stopped
+    volumes:
+      - ./element/config.json:/app/config.json:ro
+    environment:
+      - ELEMENT_WEB_PORT=8080
+    networks:
+      - matrix_net
+    extra_hosts:
+      - "keycloak.demo.local:10.89.0.100"
+      - "matrix.demo.local:10.89.0.100"
+
+# ─────────────────────────────────────────
+# COTURN
+# ─────────────────────────────────────────
+  coturn:
+    image: coturn/coturn:latest
+    restart: unless-stopped
+    volumes:
+      - ./coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "5349:5349/tcp"
+    networks:
+      - matrix_net
+
+# ─────────────────────────────────────────
+# KEYCLOAK DATABASE
+# ─────────────────────────────────────────
+  keycloak_postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak123
+      POSTGRES_DB: keycloak
+    volumes:
+      - ./keycloak/postgres:/var/lib/postgresql/data
+    networks:
+      - matrix_net
+
+# ─────────────────────────────────────────
+# KEYCLOAK
+# ─────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    restart: unless-stopped
+    command: start-dev
+    ports:
+      - "8180:8080"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak_postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak123
+      KC_HOSTNAME: keycloak.demo.local
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY: edge
+      KC_PROXY_HEADERS: xforwarded
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin123
+    depends_on:
+      - keycloak_postgres
+    networks:
+      - matrix_net
