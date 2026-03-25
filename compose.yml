@@ -24,7 +24,7 @@ services:
       matrix_net:
         ipv4_address: 10.89.0.100
     dns:
-      - 10.89.0.2
+      - 10.89.0.10
     depends_on:
       - synapse
       - element
@@ -46,7 +46,7 @@ services:
     networks:
       - matrix_net
     dns:
-      - 10.89.0.2
+      - 10.89.0.10
 
 # ─────────────────────────────────────────
 # SYNAPSE
@@ -60,16 +60,12 @@ services:
       SYNAPSE_CONFIG_PATH: /data/homeserver.yaml
     volumes:
       - ./synapse/data:/data
-      - ./synapse/cert.pem:/usr/local/share/ca-certificates/local.crt:ro
     depends_on:
       - synapse_postgres
-    extra_hosts:
-      - "matrix.demo.local:10.89.0.100"
-      - "keycloak.demo.local:10.89.0.100"
     networks:
       - matrix_net
     dns:
-      - 10.89.0.2
+      - 10.89.0.10
 
 # ─────────────────────────────────────────
 # ELEMENT WEB
@@ -84,7 +80,8 @@ services:
     networks:
       - matrix_net
     dns:
-      - 10.89.0.2
+      - 10.89.0.10
+
 # ─────────────────────────────────────────
 # COTURN
 # ─────────────────────────────────────────
@@ -100,7 +97,7 @@ services:
     networks:
       - matrix_net
     dns:
-      - 10.89.0.2
+      - 10.89.0.10
 
 # ─────────────────────────────────────────
 # KEYCLOAK DATABASE
@@ -117,7 +114,7 @@ services:
     networks:
       - matrix_net
     dns:
-      - 10.89.0.2
+      - 10.89.0.10
 
 # ─────────────────────────────────────────
 # KEYCLOAK
@@ -145,7 +142,7 @@ services:
     networks:
       - matrix_net
     dns:
-      - 10.89.0.2
+      - 10.89.0.10
 
 # ─────────────────────────────────────────
 # DNSMASQ
@@ -160,4 +157,4 @@ services:
       - NET_ADMIN
     networks:
       matrix_net:
-        ipv4_address: 10.89.0.2
+        ipv4_address: 10.89.0.10
